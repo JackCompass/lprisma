@@ -1,37 +1,41 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { UserModule } from './user/user.module';
-import { cwd } from 'process';
-import { join } from 'path';
 
 @Module({
   imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
+    ConfigModule.forRoot({
+      envFilePath: '.env',
+    }),
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      playground: true,
-      autoSchemaFile: '/tmp/schema.gql',
-      includeStacktraceInErrorResponses: false,
-      formatError: (formattedError) => {
-        const {
-          message,
-          extensions: { code },
-        } = formattedError;
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => {
         return {
-          message: message,
-          code: code,
+          playground: true,
+          autoSchemaFile: configService.get('SCHEMA_FILE_PATH'),
+          includeStacktraceInErrorResponses: false,
+          formatError: (formattedError) => {
+            const {
+              message,
+              extensions: { code },
+            } = formattedError;
+            return {
+              message: message,
+              code: code,
+            };
+          },
         };
       },
-    }),
-    ConfigModule.forRoot({
-      envFilePath: '.env.development',
+      inject: [ConfigService],
     }),
     UserModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, ConfigService],
 })
 export class AppModule {}
