@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
-import { PetsModule } from './pets/pets.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -12,11 +12,22 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
       driver: ApolloDriver,
       playground: true,
       autoSchemaFile: 'src/schema.gql',
+      includeStacktraceInErrorResponses: false,
+      formatError: (formattedError) => {
+        const {
+          message,
+          extensions: { code },
+        } = formattedError;
+        return {
+          message: message,
+          code: code,
+        };
+      },
     }),
     ConfigModule.forRoot({
       envFilePath: '.env.development',
     }),
-    PetsModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
